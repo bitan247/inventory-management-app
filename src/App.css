@@ -5,31 +5,35 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-  background: #f5f5f5;
-  color: #333;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  background: #f5f7fa;
+  color: #1a1a1a;
+  line-height: 1.5;
   -webkit-tap-highlight-color: transparent;
 }
 
 .app {
   min-height: 100vh;
-  padding-bottom: 70px; /* Space for bottom nav */
+  padding-bottom: 70px;
 }
 
 /* Main Content */
 .main-content {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 15px;
+  padding: 20px 15px;
 }
 
 .page-title {
   color: #1a237e;
   margin-bottom: 20px;
-  font-size: 1.5em;
+  font-size: 1.75em;
+  font-weight: 700;
 }
 
-/* Bottom Navigation (Mobile-First) */
+/* Bottom Navigation */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -40,7 +44,7 @@ body {
   justify-content: space-around;
   align-items: center;
   height: 65px;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
   z-index: 1000;
   padding: 0 5px;
 }
@@ -48,16 +52,16 @@ body {
 .nav-btn {
   background: none;
   border: none;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   padding: 8px 12px;
   cursor: pointer;
-  transition: all 0.3s;
-  min-width: 60px;
+  transition: all 0.2s;
+  min-width: 55px;
   border-radius: 8px;
 }
 
@@ -67,7 +71,7 @@ body {
 
 .nav-btn.active {
   color: #ffd54f;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .nav-icon {
@@ -76,72 +80,80 @@ body {
 
 .nav-label {
   font-size: 0.7em;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
 
 /* Dashboard */
 .financial-summary {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 15px;
+  margin-bottom: 25px;
 }
 
 .financial-card {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  color: #ffffff;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
 .financial-card.profit {
   background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: #ffffff;
 }
 
 .financial-card h3 {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   font-size: 0.9em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   opacity: 0.9;
 }
 
 .financial-number {
   font-size: 1.8em;
-  font-weight: bold;
+  font-weight: 700;
+  color: #ffffff;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .stat-card {
-  background: white;
+  background: #ffffff;
   padding: 18px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   text-align: center;
+  border: 2px solid transparent;
 }
 
 .stat-card.warning {
-  border: 2px solid #ff9800;
+  border-color: #ff9800;
 }
 
 .stat-card.profit {
-  border: 2px solid #4caf50;
+  border-color: #4caf50;
 }
 
 .stat-card h3 {
-  color: #666;
+  color: #555;
   margin-bottom: 8px;
   font-size: 0.85em;
+  font-weight: 600;
 }
 
 .stat-number {
   font-size: 1.4em;
-  font-weight: bold;
+  font-weight: 700;
   color: #1a237e;
 }
 
@@ -150,18 +162,19 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .quick-action-btn {
-  padding: 18px;
+  padding: 16px;
   border: none;
   border-radius: 12px;
-  font-size: 1.1em;
+  font-size: 1em;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  transition: all 0.2s;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  color: #ffffff;
 }
 
 .quick-action-btn:active {
@@ -170,40 +183,45 @@ body {
 
 .quick-action-btn.sale {
   background: #4caf50;
-  color: white;
 }
 
 .quick-action-btn.purchase {
   background: #2196f3;
-  color: white;
 }
 
 .quick-action-btn.report {
   background: #9c27b0;
-  color: white;
 }
+
+.quick-action-btn.import {
+  background: #ff9800;
+}
+
+/* Backup Section */
 .backup-section {
   display: flex;
   gap: 10px;
   margin: 20px 0;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .backup-btn {
   background: #607d8b;
-  color: white;
+  color: #ffffff;
   border: none;
   padding: 12px 20px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 0.95em;
+  font-size: 0.9em;
   font-weight: 600;
-  transition: all 0.3s;
+  transition: all 0.2s;
 }
 
 .backup-btn:hover {
   background: #455a64;
 }
+
 /* Alerts */
 .alert-warning {
   background: #fff3e0;
@@ -216,34 +234,55 @@ body {
 .alert-warning h3 {
   color: #e65100;
   margin-bottom: 10px;
+  font-weight: 600;
 }
 
 .alert-item {
   padding: 8px 0;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-  font-size: 0.95em;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 0.9em;
+  color: #333;
 }
 
-/* Inventory List (Card-based for mobile) */
+.success-message {
+  color: #2e7d32;
+  font-size: 0.95em;
+  padding: 10px;
+  background: #e8f5e9;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* Inventory List */
 .filters {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
-.search-input, .category-select {
+.search-input,
+.category-select,
+.sort-select {
   padding: 14px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid #ddd;
   border-radius: 10px;
-  font-size: 16px; /* Prevent zoom on iOS */
+  font-size: 15px;
   width: 100%;
-  background: white;
+  background: #ffffff;
+  color: #1a1a1a;
+  transition: border-color 0.2s;
 }
 
-.search-input:focus, .category-select:focus {
+.search-input:focus,
+.category-select:focus,
+.sort-select:focus {
   outline: none;
   border-color: #1a237e;
+}
+
+.search-input::placeholder {
+  color: #999;
 }
 
 .inventory-list {
@@ -253,15 +292,16 @@ body {
 }
 
 .inventory-card {
-  background: white;
+  background: #ffffff;
   padding: 16px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s;
+  border-left: 4px solid transparent;
 }
 
 .inventory-card.low-stock {
-  border-left: 4px solid #ff9800;
+  border-left-color: #ff9800;
   background: #fffdf5;
 }
 
@@ -269,21 +309,24 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  gap: 10px;
 }
 
 .inventory-card-header h3 {
   color: #1a237e;
   font-size: 1.1em;
+  font-weight: 600;
   flex: 1;
 }
 
 .category-badge {
   background: #e3f2fd;
-  color: #1976d2;
-  padding: 4px 8px;
+  color: #1565c0;
+  padding: 4px 10px;
   border-radius: 12px;
   font-size: 0.75em;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -296,11 +339,15 @@ body {
 
 .inventory-card-details p {
   font-size: 0.9em;
-  color: #555;
+  color: #444;
+}
+
+.inventory-card-details strong {
+  color: #1a1a1a;
 }
 
 .profit-text {
-  color: #4caf50 !important;
+  color: #2e7d32 !important;
   font-weight: 600;
 }
 
@@ -308,7 +355,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-top: 10px;
+  padding-top: 12px;
   border-top: 1px solid #f0f0f0;
 }
 
@@ -324,22 +371,25 @@ body {
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  color: #333;
 }
 
 .qty-btn:active {
   background: #1a237e;
-  color: white;
+  color: #ffffff;
 }
 
 .quantity {
   margin: 0 8px;
-  font-weight: bold;
+  font-weight: 700;
   font-size: 1.1em;
   min-width: 30px;
   text-align: center;
+  color: #1a1a1a;
 }
 
-.edit-btn, .delete-btn {
+.edit-btn,
+.delete-btn {
   width: 36px;
   height: 36px;
   border: none;
@@ -368,10 +418,10 @@ body {
 }
 
 .simple-form {
-  background: white;
+  background: #ffffff;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .form-group {
@@ -382,26 +432,33 @@ body {
   display: block;
   margin-bottom: 6px;
   font-weight: 600;
-  color: #555;
-  font-size: 0.95em;
+  color: #333;
+  font-size: 0.9em;
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
   width: 100%;
   padding: 14px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid #ddd;
   border-radius: 10px;
-  font-size: 16px;
-  transition: border-color 0.3s;
-  background: white;
-  -webkit-appearance: none;
+  font-size: 15px;
+  transition: border-color 0.2s;
+  background: #ffffff;
+  color: #1a1a1a;
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
   outline: none;
   border-color: #1a237e;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #999;
 }
 
 .form-row {
@@ -423,13 +480,14 @@ body {
   width: 100%;
   padding: 12px;
   background: #e3f2fd;
-  color: #1976d2;
-  border: 2px dashed #1976d2;
+  color: #1565c0;
+  border: 2px dashed #1565c0;
   border-radius: 10px;
   cursor: pointer;
-  font-size: 1em;
+  font-size: 0.95em;
+  font-weight: 600;
   margin-bottom: 20px;
-  transition: all 0.3s;
+  transition: all 0.2s;
 }
 
 .add-more-btn:active {
@@ -443,7 +501,8 @@ body {
   padding: 8px 16px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 0.9em;
+  font-size: 0.85em;
+  font-weight: 600;
   margin-top: 10px;
 }
 
@@ -451,13 +510,13 @@ body {
   width: 100%;
   padding: 16px;
   background: #1a237e;
-  color: white;
+  color: #ffffff;
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  font-size: 1.1em;
+  font-size: 1em;
   font-weight: 600;
-  transition: all 0.3s;
+  transition: all 0.2s;
   margin-top: 10px;
 }
 
@@ -470,44 +529,70 @@ body {
   background: #4caf50;
 }
 
+/* Bulk Import */
+.bulk-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: "Courier New", monospace;
+  resize: vertical;
+  min-height: 120px;
+  margin-bottom: 10px;
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+.bulk-textarea:focus {
+  outline: none;
+  border-color: #1a237e;
+}
+
 /* Reports */
 .report-summary {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .report-card {
-  background: white;
+  background: #ffffff;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .report-card h3 {
   color: #1a237e;
   margin-bottom: 12px;
   font-size: 1.1em;
+  font-weight: 600;
 }
 
 .report-card p {
   padding: 6px 0;
-  color: #555;
+  color: #444;
   font-size: 0.95em;
 }
 
+.report-card strong {
+  color: #1a1a1a;
+}
+
 .recent-sales {
-  background: white;
+  background: #ffffff;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .recent-sales h2 {
   color: #1a237e;
   margin-bottom: 15px;
   font-size: 1.2em;
+  font-weight: 600;
 }
 
 .sale-record {
@@ -525,11 +610,12 @@ body {
   justify-content: space-between;
   margin-bottom: 8px;
   font-size: 0.9em;
+  color: #444;
 }
 
 .sale-total {
-  font-weight: bold;
-  color: #4caf50;
+  font-weight: 700;
+  color: #2e7d32;
 }
 
 .sale-record-items {
@@ -540,30 +626,26 @@ body {
 }
 
 .sale-item {
-  font-size: 0.9em;
+  font-size: 0.88em;
   padding: 3px 0;
+  color: #444;
 }
 
 .sale-record-profit {
   font-weight: 600;
-  color: #4caf50;
+  color: #2e7d32;
   text-align: right;
 }
 
 /* Utility */
-.text-center {
+.empty-state {
   text-align: center;
+  padding: 40px;
+  color: #777;
+  font-size: 1em;
 }
 
-.mt-20 {
-  margin-top: 20px;
-}
-
-.mb-20 {
-  margin-bottom: 20px;
-}
-
-/* Tablet and Desktop */
+/* Desktop/Tablet */
 @media (min-width: 768px) {
   .main-content {
     padding: 30px;
@@ -578,7 +660,7 @@ body {
   }
 
   .quick-actions {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .filters {
@@ -590,6 +672,10 @@ body {
   }
 
   .category-select {
+    flex: 1;
+  }
+
+  .sort-select {
     flex: 1;
   }
 
@@ -606,18 +692,11 @@ body {
   }
 
   .bottom-nav {
-    display: none; /* Hide bottom nav on desktop */
+    display: none;
   }
 
   .app {
     padding-bottom: 0;
-  }
-
-  /* Show top navigation on desktop */
-  .main-content::before {
-    content: '';
-    display: block;
-    height: 20px;
   }
 }
 
@@ -632,4 +711,116 @@ body {
     grid-template-columns: repeat(2, 1fr);
     gap: 15px;
   }
+}
+/* Compact inventory table */
+.inventory-table-header {
+  display: grid;
+  grid-template-columns: 2fr 0.7fr 0.9fr 0.9fr 0.9fr 1.5fr;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #787db3;
+  color: #ffffff;
+  font-size: 0.75em;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-radius: 8px 8px 0 0;
+  overflow-x: auto;
+}
+
+.inventory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: #ffffff;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow-x: auto;
+}
+
+.inventory-row {
+  display: grid;
+  grid-template-columns: 2fr 0.7fr 0.9fr 0.9fr 0.9fr 1.5fr;
+  gap: 6px;
+  padding: 10px;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.85em;
+  min-width: 560px; /* ensures horizontal scroll on very narrow phones */
+}
+
+.inventory-row:last-child {
+  border-bottom: none;
+}
+
+.inventory-row:nth-child(even) {
+  background: #fafafa;
+}
+
+.col-name {
+  font-weight: 600;
+  color: #1a237e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.col-num {
+  text-align: right;
+  color: #333;
+}
+
+.profit-text {
+  color: #2e7d32 !important;
+  font-weight: 600;
+}
+
+.col-actions {
+  display: flex;
+  gap: 3px;
+  justify-content: flex-end;
+}
+
+.mini-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid #ddd;
+  background: #f8f9fa;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #333;
+}
+
+.mini-btn:active {
+  background: #1a237e;
+  color: #ffffff;
+}
+
+.mini-btn.danger {
+  background: #ffebee;
+}
+
+.mini-btn.danger:active {
+  background: #c62828;
+  color: #ffffff;
+}
+.add-item-btn {
+  background: #4caf50;
+  color: #ffffff;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.add-item-btn:active {
+  background: #388e3c;
+  transform: scale(0.97);
 }

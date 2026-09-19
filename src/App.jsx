@@ -4,134 +4,83 @@ import "./App.css";
 function App() {
   const [currentPage, setCurrentPage] = useState("dashboard");
 
-  // Load items from localStorage with cost price
+  // Load items from localStorage
   const [items, setItems] = useState(() => {
     const savedItems = localStorage.getItem("inventory-items");
     if (savedItems) {
       return JSON.parse(savedItems);
     }
-    // Default construction materials demo data with cost prices
+    // Default demo data
     return [
       {
         id: 1,
         name: "Cement (50kg bag)",
-        sku: "CEM-001",
-        category: "Cement & Concrete",
         quantity: 45,
-        costPrice: 380.0,
-        sellingPrice: 450.0,
-        unit: "bags",
-        minStockLevel: 20,
-        supplier: "Dangote Cement",
-        location: "Warehouse A, Shelf 1",
+        costPrice: 380,
+        sellingPrice: 450,
       },
       {
         id: 2,
         name: "Steel Rebar (12mm)",
-        sku: "STL-002",
-        category: "Steel & Metal",
         quantity: 150,
-        costPrice: 720.0,
-        sellingPrice: 850.0,
-        unit: "pieces",
-        minStockLevel: 50,
-        supplier: "African Steel Mills",
-        location: "Warehouse B, Section 3",
+        costPrice: 720,
+        sellingPrice: 850,
       },
       {
         id: 3,
-        name: "Sand (Sharp, per ton)",
-        sku: "SND-003",
-        category: "Aggregates",
+        name: "Sharp Sand",
         quantity: 12,
-        costPrice: 2000.0,
-        sellingPrice: 2500.0,
-        unit: "tons",
-        minStockLevel: 5,
-        supplier: "Local Quarry Ltd",
-        location: "Outdoor Storage",
+        costPrice: 2000,
+        sellingPrice: 2500,
       },
       {
         id: 4,
-        name: "Electrical PVC Pipe (25mm)",
-        sku: "ELE-004",
-        category: "Electrical",
+        name: "PVC Pipe (25mm)",
         quantity: 200,
-        costPrice: 280.0,
-        sellingPrice: 350.0,
-        unit: "meters",
-        minStockLevel: 100,
-        supplier: "PowerTech Supplies",
-        location: "Warehouse A, Shelf 4",
+        costPrice: 280,
+        sellingPrice: 350,
       },
       {
         id: 5,
-        name: "Ceramic Floor Tiles (60x60cm)",
-        sku: "TIL-005",
-        category: "Finishing Materials",
+        name: "Ceramic Floor Tiles",
         quantity: 30,
-        costPrice: 2200.0,
-        sellingPrice: 2800.0,
-        unit: "boxes",
-        minStockLevel: 15,
-        supplier: "Royal Ceramics",
-        location: "Warehouse C, Section 1",
+        costPrice: 2200,
+        sellingPrice: 2800,
       },
       {
         id: 6,
-        name: "Copper Wire (2.5mm²)",
-        sku: "ELE-006",
-        category: "Electrical",
+        name: "Copper Wire (2.5mm)",
         quantity: 8,
-        costPrice: 950.0,
-        sellingPrice: 1200.0,
-        unit: "rolls",
-        minStockLevel: 10,
-        supplier: "PowerTech Supplies",
-        location: "Warehouse A, Shelf 3",
+        costPrice: 950,
+        sellingPrice: 1200,
       },
       {
         id: 7,
         name: "Waterproof Membrane",
-        sku: "WTR-007",
-        category: "Waterproofing",
         quantity: 42,
-        costPrice: 1200.0,
-        sellingPrice: 1500.0,
-        unit: "rolls",
-        minStockLevel: 20,
-        supplier: "SealPro Solutions",
-        location: "Warehouse B, Shelf 2",
+        costPrice: 1200,
+        sellingPrice: 1500,
       },
       {
         id: 8,
-        name: "Plywood (18mm, 4x8ft)",
-        sku: "WD-008",
-        category: "Timber & Wood",
+        name: "Plywood (18mm)",
         quantity: 65,
-        costPrice: 2600.0,
-        sellingPrice: 3200.0,
-        unit: "sheets",
-        minStockLevel: 25,
-        supplier: "Timber World",
-        location: "Warehouse C, Section 2",
+        costPrice: 2600,
+        sellingPrice: 3200,
       },
     ];
   });
 
-  // Track purchases (stock in)
   const [purchases, setPurchases] = useState(() => {
     const saved = localStorage.getItem("purchases");
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Track sales (stock out)
   const [sales, setSales] = useState(() => {
     const saved = localStorage.getItem("sales");
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Track customers
   const [customers, setCustomers] = useState(() => {
     const saved = localStorage.getItem("customers");
     return saved ? JSON.parse(saved) : [];
@@ -143,27 +92,19 @@ function App() {
   });
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortBy, setSortBy] = useState("name");
-  const [showLowStockOnly, setShowLowStockOnly] = useState(false);
 
   // Bulk import state
   const [bulkText, setBulkText] = useState("");
   const importFileRef = useRef(null);
   const [importSuccess, setImportSuccess] = useState(false);
 
-  // Form states
+  // Form state
   const [formData, setFormData] = useState({
     name: "",
-    sku: "",
-    category: "",
     quantity: "",
     costPrice: "",
     sellingPrice: "",
-    unit: "",
-    minStockLevel: "",
-    supplier: "",
-    location: "",
   });
 
   const [editingItem, setEditingItem] = useState(null);
@@ -173,7 +114,6 @@ function App() {
     itemId: "",
     quantity: "",
     costPrice: "",
-    supplier: "",
     date: new Date().toISOString().split("T")[0],
   });
 
@@ -209,54 +149,47 @@ function App() {
   // Add/Update item
   const addItem = (e) => {
     e.preventDefault();
-    if (formData.name && formData.sku) {
-      if (editingItem) {
-        setItems(
-          items.map((item) =>
-            item.id === editingItem.id
-              ? {
-                  ...item,
-                  ...formData,
-                  quantity: parseInt(formData.quantity) || 0,
-                  costPrice: parseFloat(formData.costPrice) || 0,
-                  sellingPrice: parseFloat(formData.sellingPrice) || 0,
-                  minStockLevel: parseInt(formData.minStockLevel) || 0,
-                }
-              : item,
-          ),
-        );
-        setEditingItem(null);
-      } else {
-        setItems([
-          ...items,
-          {
-            ...formData,
-            id: nextId,
-            quantity: parseInt(formData.quantity) || 0,
-            costPrice: parseFloat(formData.costPrice) || 0,
-            sellingPrice: parseFloat(formData.sellingPrice) || 0,
-            minStockLevel: parseInt(formData.minStockLevel) || 0,
-          },
-        ]);
-        setNextId(nextId + 1);
-      }
-      setFormData({
-        name: "",
-        sku: "",
-        category: "",
-        quantity: "",
-        costPrice: "",
-        sellingPrice: "",
-        unit: "",
-        minStockLevel: "",
-        supplier: "",
-        location: "",
-      });
-      setCurrentPage("inventory");
+    if (!formData.name) return;
+
+    const now = new Date().toISOString();
+
+    if (editingItem) {
+      setItems(
+        items.map((item) =>
+          item.id === editingItem.id
+            ? {
+                ...item,
+                name: formData.name,
+                quantity: parseInt(formData.quantity) || 0,
+                costPrice: parseFloat(formData.costPrice) || 0,
+                sellingPrice: parseFloat(formData.sellingPrice) || 0,
+                updatedAt: now,
+              }
+            : item,
+        ),
+      );
+      setEditingItem(null);
+    } else {
+      setItems([
+        ...items,
+        {
+          id: nextId,
+          name: formData.name,
+          quantity: parseInt(formData.quantity) || 0,
+          costPrice: parseFloat(formData.costPrice) || 0,
+          sellingPrice: parseFloat(formData.sellingPrice) || 0,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ]);
+      setNextId(nextId + 1);
     }
+
+    setFormData({ name: "", quantity: "", costPrice: "", sellingPrice: "" });
+    setCurrentPage("inventory");
   };
 
-  // Record purchase (stock in)
+  // Record purchase
   const recordPurchase = (e) => {
     e.preventDefault();
     const item = items.find((i) => i.id === parseInt(purchaseForm.itemId));
@@ -270,14 +203,11 @@ function App() {
       costPrice: parseFloat(purchaseForm.costPrice),
       totalCost:
         parseInt(purchaseForm.quantity) * parseFloat(purchaseForm.costPrice),
-      supplier: purchaseForm.supplier || item.supplier,
       date: purchaseForm.date,
       timestamp: new Date().toISOString(),
     };
 
     setPurchases([...purchases, purchase]);
-
-    // Update item quantity and cost price
     setItems(
       items.map((i) =>
         i.id === item.id
@@ -294,41 +224,26 @@ function App() {
       itemId: "",
       quantity: "",
       costPrice: "",
-      supplier: "",
       date: new Date().toISOString().split("T")[0],
     });
 
-    alert(
-      "Added " +
-        purchase.quantity +
-        " " +
-        item.unit +
-        " of " +
-        item.name +
-        " to stock",
-    );
+    alert("Added " + purchase.quantity + " of " + item.name + " to stock");
   };
 
-  // Record sale (stock out)
+  // Record sale
   const recordSale = (e) => {
     e.preventDefault();
     let totalSale = 0;
     let totalCost = 0;
     const saleItems = [];
 
-    // Process each item in the sale
     for (const saleItem of saleForm.items) {
       const item = items.find((i) => i.id === parseInt(saleItem.itemId));
       if (!item || !saleItem.quantity) continue;
 
       if (parseInt(saleItem.quantity) > item.quantity) {
         alert(
-          "Not enough stock for " +
-            item.name +
-            ". Available: " +
-            item.quantity +
-            " " +
-            item.unit,
+          "Not enough stock for " + item.name + ". Available: " + item.quantity,
         );
         return;
       }
@@ -356,7 +271,6 @@ function App() {
       return;
     }
 
-    // Apply discount if any
     const discountAmount = (totalSale * (saleForm.discount || 0)) / 100;
     const finalTotal = totalSale - discountAmount;
 
@@ -374,25 +288,20 @@ function App() {
 
     setSales([...sales, sale]);
 
-    // Update stock quantities
     setItems(
       items.map((item) => {
         const soldItem = saleItems.find((si) => si.itemId === item.id);
         return soldItem
-          ? {
-              ...item,
-              quantity: item.quantity - soldItem.quantity,
-            }
+          ? { ...item, quantity: item.quantity - soldItem.quantity }
           : item;
       }),
     );
 
-    // Save customer if new
     if (saleForm.customerName && saleForm.customerName !== "Walk-in Customer") {
-      const existingCustomer = customers.find(
+      const existing = customers.find(
         (c) => c.name.toLowerCase() === saleForm.customerName.toLowerCase(),
       );
-      if (!existingCustomer) {
+      if (!existing) {
         setCustomers([
           ...customers,
           {
@@ -405,7 +314,7 @@ function App() {
       } else {
         setCustomers(
           customers.map((c) =>
-            c.id === existingCustomer.id
+            c.id === existing.id
               ? {
                   ...c,
                   totalPurchases: c.totalPurchases + finalTotal,
@@ -432,14 +341,12 @@ function App() {
     );
   };
 
-  // Delete item
   const deleteItem = (id) => {
     if (window.confirm("Are you sure you want to delete this item?")) {
       setItems(items.filter((item) => item.id !== id));
     }
   };
 
-  // Update quantity
   const updateQuantity = (id, change) => {
     setItems(
       items.map((item) =>
@@ -450,25 +357,17 @@ function App() {
     );
   };
 
-  // Edit item
   const startEditing = (item) => {
     setEditingItem(item);
     setFormData({
       name: item.name,
-      sku: item.sku,
-      category: item.category,
       quantity: item.quantity.toString(),
       costPrice: item.costPrice.toString(),
       sellingPrice: item.sellingPrice.toString(),
-      unit: item.unit,
-      minStockLevel: item.minStockLevel.toString(),
-      supplier: item.supplier,
-      location: item.location,
     });
     setCurrentPage("add-item");
   };
 
-  // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-ET", {
       style: "currency",
@@ -477,7 +376,7 @@ function App() {
     }).format(amount);
   };
 
-  // Calculate statistics
+  // Stats
   const totalItems = items.length;
   const totalStockValue = items.reduce(
     (total, item) => total + item.costPrice * item.quantity,
@@ -488,11 +387,7 @@ function App() {
     0,
   );
   const totalPotentialProfit = totalPotentialRevenue - totalStockValue;
-  const lowStockItems = items.filter(
-    (item) => item.quantity <= item.minStockLevel,
-  );
 
-  // Today's sales
   const today = new Date().toISOString().split("T")[0];
   const todaySales = sales.filter((sale) => sale.date === today);
   const todayRevenue = todaySales.reduce(
@@ -504,7 +399,6 @@ function App() {
     0,
   );
 
-  // This month's sales
   const thisMonth = today.substring(0, 7);
   const monthSales = sales.filter((sale) => sale.date.startsWith(thisMonth));
   const monthRevenue = monthSales.reduce(
@@ -516,78 +410,46 @@ function App() {
     0,
   );
 
-  // Get filtered and sorted items
-  const categories = ["all", ...new Set(items.map((item) => item.category))];
-  const filteredItems = items
-    .filter((item) => {
-      const matchesSearch =
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.sku.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory =
-        categoryFilter === "all" || item.category === categoryFilter;
-      const matchesLowStock =
-        !showLowStockOnly || item.quantity <= item.minStockLevel;
-      return matchesSearch && matchesCategory && matchesLowStock;
-    })
+  // Filtered items
+    const filteredItems = items
+    .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
     .sort((a, b) => {
-      switch (sortBy) {
-        case "name":
-          return a.name.localeCompare(b.name);
-        case "quantity":
-          return a.quantity - b.quantity;
-        case "profit":
-          return a.sellingPrice - a.costPrice - (b.sellingPrice - b.costPrice);
-        default:
-          return 0;
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'quantity') return a.quantity - b.quantity;
+      if (sortBy === 'profit') return (a.sellingPrice - a.costPrice) - (b.sellingPrice - b.costPrice);
+      if (sortBy === 'date') {
+        const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return bTime - aTime;
       }
+      return 0;
     });
 
-  // Export to CSV
+  // Export CSV
   const exportToCSV = () => {
-    const headers = [
-      "SKU,Name,Category,Quantity,Unit,Cost Price,Selling Price,Profit/Unit,Stock Value,Potential Revenue,Supplier,Location,Min Stock",
-    ];
-    const rows = items.map((item) => {
-      const profitPerUnit = item.sellingPrice - item.costPrice;
-      return (
-        item.sku +
-        ',"' +
+    const headers = "Name,Quantity,CostPrice,SellingPrice";
+    const rows = items.map(
+      (item) =>
+        '"' +
         item.name +
         '",' +
-        item.category +
-        "," +
         item.quantity +
-        "," +
-        item.unit +
         "," +
         item.costPrice +
         "," +
-        item.sellingPrice +
-        "," +
-        profitPerUnit +
-        "," +
-        item.costPrice * item.quantity +
-        "," +
-        item.sellingPrice * item.quantity +
-        ',"' +
-        item.supplier +
-        '","' +
-        item.location +
-        '",' +
-        item.minStockLevel
-      );
-    });
-    const csv = headers.concat(rows).join("\n");
+        item.sellingPrice,
+    );
+    const csv = [headers, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "inventory-export-" + today + ".csv";
+    a.download = "inventory-" + today + ".csv";
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
-  // Export full backup as JSON
+  // Export backup
   const exportBackup = () => {
     const data = { items, purchases, sales, customers, nextId };
     const json = JSON.stringify(data, null, 2);
@@ -595,13 +457,12 @@ function App() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download =
-      "buildmart-backup-" + new Date().toISOString().split("T")[0] + ".json";
+    a.download = "buildmart-backup-" + today + ".json";
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
-  // Handle import backup file
+  // Import backup
   const importBackup = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -627,14 +488,14 @@ function App() {
           alert("Invalid backup file.");
         }
       } catch (err) {
-        alert("Error reading file. Please select a valid JSON backup.");
+        alert("Error reading file.");
       }
     };
     reader.readAsText(file);
     e.target.value = "";
   };
 
-  // Bulk import from CSV
+  // Bulk import (4 columns only)
   const handleBulkImport = () => {
     const lines = bulkText.trim().split("\n");
     if (lines.length < 2) {
@@ -645,19 +506,13 @@ function App() {
     const newItems = [];
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(",");
-      if (values.length < 10) continue;
+      if (values.length < 4) continue;
       const item = {
-        name: values[0].trim(),
-        sku: values[1].trim(),
-        category: values[2].trim(),
-        quantity: parseInt(values[3]) || 0,
-        unit: values[4].trim(),
-        costPrice: parseFloat(values[5]) || 0,
-        sellingPrice: parseFloat(values[6]) || 0,
-        minStockLevel: parseInt(values[7]) || 0,
-        supplier: values[8].trim(),
-        location: values[9].trim(),
         id: nextId + newItems.length,
+        name: values[0].trim(),
+        quantity: parseInt(values[1]) || 0,
+        costPrice: parseFloat(values[2]) || 0,
+        sellingPrice: parseFloat(values[3]) || 0,
       };
       newItems.push(item);
     }
@@ -673,7 +528,6 @@ function App() {
     alert("Added " + newItems.length + " items successfully!");
   };
 
-  // Handle file upload for bulk import
   const handleBulkFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -685,7 +539,7 @@ function App() {
     e.target.value = "";
   };
 
-  // Render current page
+  // Render page
   const renderPage = () => {
     switch (currentPage) {
       case "dashboard":
@@ -695,19 +549,19 @@ function App() {
 
             <div className="financial-summary">
               <div className="financial-card">
-                <h3>💰 Capital in Stock</h3>
+                <h3>Capital in Stock</h3>
                 <p className="financial-number">
                   {formatCurrency(totalStockValue)}
                 </p>
               </div>
               <div className="financial-card">
-                <h3>📈 Potential Revenue</h3>
+                <h3>Potential Revenue</h3>
                 <p className="financial-number">
                   {formatCurrency(totalPotentialRevenue)}
                 </p>
               </div>
               <div className="financial-card profit">
-                <h3>✅ Potential Profit</h3>
+                <h3>Potential Profit</h3>
                 <p className="financial-number">
                   {formatCurrency(totalPotentialProfit)}
                 </p>
@@ -716,24 +570,20 @@ function App() {
 
             <div className="stats-grid">
               <div className="stat-card">
-                <h3>📦 Total Items</h3>
+                <h3>Total Items</h3>
                 <p className="stat-number">{totalItems}</p>
               </div>
-              <div
-                className={
-                  "stat-card " + (lowStockItems.length > 0 ? "warning" : "")
-                }
-              >
-                <h3>⚠️ Low Stock</h3>
-                <p className="stat-number">{lowStockItems.length}</p>
-              </div>
               <div className="stat-card">
-                <h3>📅 Today's Sales</h3>
+                <h3>Today's Sales</h3>
                 <p className="stat-number">{formatCurrency(todayRevenue)}</p>
               </div>
               <div className="stat-card profit">
-                <h3>💵 Today's Profit</h3>
+                <h3>Today's Profit</h3>
                 <p className="stat-number">{formatCurrency(todayProfit)}</p>
+              </div>
+              <div className="stat-card">
+                <h3>Month Sales</h3>
+                <p className="stat-number">{formatCurrency(monthRevenue)}</p>
               </div>
             </div>
 
@@ -742,25 +592,25 @@ function App() {
                 onClick={() => setCurrentPage("record-sale")}
                 className="quick-action-btn sale"
               >
-                💰 Record Sale
+                Record Sale
               </button>
               <button
                 onClick={() => setCurrentPage("record-purchase")}
                 className="quick-action-btn purchase"
               >
-                📥 Record Purchase
+                Record Purchase
               </button>
               <button
                 onClick={() => setCurrentPage("reports")}
                 className="quick-action-btn report"
               >
-                📊 View Reports
+                View Reports
               </button>
               <button
                 onClick={() => setCurrentPage("bulk-import")}
                 className="quick-action-btn import"
               >
-                📥 Bulk Import
+                Bulk Import
               </button>
             </div>
 
@@ -782,49 +632,24 @@ function App() {
                 onChange={importBackup}
               />
               {importSuccess && (
-                <p className="success-message">
-                  ✅ Backup restored successfully!
-                </p>
+                <p className="success-message">Backup restored!</p>
               )}
             </div>
-
-            {lowStockItems.length > 0 && (
-              <div className="alert-warning">
-                <h3>⚠️ Low Stock Alert</h3>
-                {lowStockItems.map((item) => (
-                  <div key={item.id} className="alert-item">
-                    {item.name} - Only {item.quantity} {item.unit} left
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         );
-
       case "inventory":
         return (
           <div className="inventory-page">
             <h1 className="page-title">📦 Inventory</h1>
 
-            <div className="filters">
+                        <div className="filters">
               <input
                 type="text"
-                placeholder="🔍 Search..."
+                placeholder="Search items..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-input"
               />
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="category-select"
-              >
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat === "all" ? "All" : cat}
-                  </option>
-                ))}
-              </select>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -833,70 +658,73 @@ function App() {
                 <option value="name">Sort by Name</option>
                 <option value="quantity">Sort by Quantity</option>
                 <option value="profit">Sort by Profit</option>
+                <option value="date">Sort by Date (Newest First)</option>
               </select>
+              <button
+                onClick={() => {
+                  setEditingItem(null);
+                  setFormData({ name: '', quantity: '', costPrice: '', sellingPrice: '' });
+                  setCurrentPage('add-item');
+                }}
+                className="add-item-btn"
+              >
+                ➕ Add Item
+              </button>
+            </div>
+
+            <div className="inventory-table-header">
+              <span className="col-name">Name</span>
+              <span className="col-num">Stock</span>
+              <span className="col-num">Cost</span>
+              <span className="col-num">Sell</span>
+              <span className="col-num">Profit</span>
+              <span className="col-actions"></span>
             </div>
 
             <div className="inventory-list">
               {filteredItems.map((item) => {
                 const profitPerUnit = item.sellingPrice - item.costPrice;
-                const isLow = item.quantity <= item.minStockLevel;
                 return (
-                  <div
-                    key={item.id}
-                    className={"inventory-card " + (isLow ? "low-stock" : "")}
-                  >
-                    <div className="inventory-card-header">
-                      <h3>{item.name}</h3>
-                      <span className="category-badge">{item.category}</span>
-                    </div>
-                    <div className="inventory-card-details">
-                      <p>SKU: {item.sku}</p>
-                      <p>
-                        Stock:{" "}
-                        <strong>
-                          {item.quantity} {item.unit}
-                        </strong>
-                      </p>
-                      <p>Cost: {formatCurrency(item.costPrice)}</p>
-                      <p>Sell: {formatCurrency(item.sellingPrice)}</p>
-                      <p className="profit-text">
-                        Profit: {formatCurrency(profitPerUnit)}/unit
-                      </p>
-                    </div>
-                    <div className="inventory-card-actions">
+                  <div key={item.id} className="inventory-row">
+                    <span className="col-name" title={item.name}>
+                      {item.name}
+                    </span>
+                    <span className="col-num">{item.quantity}</span>
+                    <span className="col-num">{item.costPrice}</span>
+                    <span className="col-num">{item.sellingPrice}</span>
+                    <span className="col-num profit-text">{profitPerUnit}</span>
+                    <span className="col-actions">
                       <button
                         onClick={() => updateQuantity(item.id, -1)}
-                        className="qty-btn"
+                        className="mini-btn"
                       >
                         -
                       </button>
-                      <span className="quantity">{item.quantity}</span>
                       <button
                         onClick={() => updateQuantity(item.id, 1)}
-                        className="qty-btn"
+                        className="mini-btn"
                       >
                         +
                       </button>
                       <button
                         onClick={() => startEditing(item)}
-                        className="edit-btn"
+                        className="mini-btn"
                       >
                         ✏️
                       </button>
                       <button
                         onClick={() => deleteItem(item.id)}
-                        className="delete-btn"
+                        className="mini-btn danger"
                       >
                         🗑️
                       </button>
-                    </div>
+                    </span>
                   </div>
                 );
               })}
             </div>
           </div>
         );
-
       case "record-purchase":
         return (
           <div className="form-page">
@@ -914,7 +742,6 @@ function App() {
                       ...purchaseForm,
                       itemId: e.target.value,
                       costPrice: item ? item.costPrice : "",
-                      supplier: item ? item.supplier : "",
                     });
                   }}
                   required
@@ -922,7 +749,7 @@ function App() {
                   <option value="">Select item...</option>
                   {items.map((item) => (
                     <option key={item.id} value={item.id}>
-                      {item.name} (Current: {item.quantity})
+                      {item.name} (Stock: {item.quantity})
                     </option>
                   ))}
                 </select>
@@ -940,7 +767,6 @@ function App() {
                   }
                   required
                   min="1"
-                  placeholder="Enter quantity"
                 />
               </div>
               <div className="form-group">
@@ -960,19 +786,6 @@ function App() {
                 />
               </div>
               <div className="form-group">
-                <label>Supplier</label>
-                <input
-                  type="text"
-                  value={purchaseForm.supplier}
-                  onChange={(e) =>
-                    setPurchaseForm({
-                      ...purchaseForm,
-                      supplier: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div className="form-group">
                 <label>Date</label>
                 <input
                   type="date"
@@ -984,7 +797,7 @@ function App() {
                 />
               </div>
               <button type="submit" className="submit-btn">
-                ✅ Record Purchase
+                Record Purchase
               </button>
             </form>
           </div>
@@ -1036,8 +849,7 @@ function App() {
                       <option value="">Select item...</option>
                       {items.map((item) => (
                         <option key={item.id} value={item.id}>
-                          {item.name} (Stock: {item.quantity} | Price:{" "}
-                          {formatCurrency(item.sellingPrice)})
+                          {item.name} (Stock: {item.quantity})
                         </option>
                       ))}
                     </select>
@@ -1088,7 +900,7 @@ function App() {
                       }}
                       className="remove-btn"
                     >
-                      ❌ Remove
+                      Remove
                     </button>
                   )}
                 </div>
@@ -1107,7 +919,7 @@ function App() {
                 }
                 className="add-more-btn"
               >
-                ➕ Add Another Item
+                Add Another Item
               </button>
 
               <div className="form-group">
@@ -1136,7 +948,7 @@ function App() {
               </div>
 
               <button type="submit" className="submit-btn sale-btn">
-                💰 Complete Sale
+                Complete Sale
               </button>
             </form>
           </div>
@@ -1234,139 +1046,52 @@ function App() {
                     setFormData({ ...formData, name: e.target.value })
                   }
                   required
+                  placeholder="e.g. Cement (50kg bag)"
                 />
               </div>
               <div className="form-group">
-                <label>SKU *</label>
-                <input
-                  type="text"
-                  value={formData.sku}
-                  onChange={(e) =>
-                    setFormData({ ...formData, sku: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Category *</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
-                  required
-                >
-                  <option value="">Select Category</option>
-                  <option value="Cement & Concrete">Cement & Concrete</option>
-                  <option value="Steel & Metal">Steel & Metal</option>
-                  <option value="Aggregates">Aggregates</option>
-                  <option value="Timber & Wood">Timber & Wood</option>
-                  <option value="Electrical">Electrical</option>
-                  <option value="Plumbing">Plumbing</option>
-                  <option value="Finishing Materials">
-                    Finishing Materials
-                  </option>
-                  <option value="Waterproofing">Waterproofing</option>
-                  <option value="Paint & Coatings">Paint & Coatings</option>
-                  <option value="Hardware & Tools">Hardware & Tools</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Cost Price *</label>
-                  <input
-                    type="number"
-                    value={formData.costPrice}
-                    onChange={(e) =>
-                      setFormData({ ...formData, costPrice: e.target.value })
-                    }
-                    required
-                    step="0.01"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Selling Price *</label>
-                  <input
-                    type="number"
-                    value={formData.sellingPrice}
-                    onChange={(e) =>
-                      setFormData({ ...formData, sellingPrice: e.target.value })
-                    }
-                    required
-                    step="0.01"
-                  />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Quantity *</label>
-                  <input
-                    type="number"
-                    value={formData.quantity}
-                    onChange={(e) =>
-                      setFormData({ ...formData, quantity: e.target.value })
-                    }
-                    required
-                    min="0"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Unit *</label>
-                  <select
-                    value={formData.unit}
-                    onChange={(e) =>
-                      setFormData({ ...formData, unit: e.target.value })
-                    }
-                    required
-                  >
-                    <option value="">Select Unit</option>
-                    <option value="bags">Bags</option>
-                    <option value="pieces">Pieces</option>
-                    <option value="tons">Tons</option>
-                    <option value="kg">Kilograms</option>
-                    <option value="meters">Meters</option>
-                    <option value="rolls">Rolls</option>
-                    <option value="sheets">Sheets</option>
-                    <option value="boxes">Boxes</option>
-                    <option value="liters">Liters</option>
-                    <option value="packs">Packs</option>
-                  </select>
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Minimum Stock Level</label>
+                <label>Quantity *</label>
                 <input
                   type="number"
-                  value={formData.minStockLevel}
+                  value={formData.quantity}
                   onChange={(e) =>
-                    setFormData({ ...formData, minStockLevel: e.target.value })
+                    setFormData({ ...formData, quantity: e.target.value })
                   }
+                  required
                   min="0"
+                  placeholder="0"
                 />
               </div>
               <div className="form-group">
-                <label>Supplier</label>
+                <label>Cost Price (ETB) *</label>
                 <input
-                  type="text"
-                  value={formData.supplier}
+                  type="number"
+                  value={formData.costPrice}
                   onChange={(e) =>
-                    setFormData({ ...formData, supplier: e.target.value })
+                    setFormData({ ...formData, costPrice: e.target.value })
                   }
+                  required
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
                 />
               </div>
               <div className="form-group">
-                <label>Location</label>
+                <label>Selling Price (ETB) *</label>
                 <input
-                  type="text"
-                  value={formData.location}
+                  type="number"
+                  value={formData.sellingPrice}
                   onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
+                    setFormData({ ...formData, sellingPrice: e.target.value })
                   }
+                  required
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
                 />
               </div>
               <button type="submit" className="submit-btn">
-                {editingItem ? "💾 Update Item" : "➕ Add Item"}
+                {editingItem ? "Update Item" : "Add Item"}
               </button>
             </form>
           </div>
@@ -1378,19 +1103,17 @@ function App() {
             <h1 className="page-title">📥 Bulk Import Items</h1>
             <div className="simple-form">
               <p>Paste CSV data with columns:</p>
-              <code>
-                Name,SKU,Category,Quantity,Unit,CostPrice,SellingPrice,MinStockLevel,Supplier,Location
-              </code>
+              <code>Name,Quantity,CostPrice,SellingPrice</code>
               <textarea
                 value={bulkText}
                 onChange={(e) => setBulkText(e.target.value)}
-                rows="6"
-                placeholder="Name,SKU,Category,Quantity,Unit,CostPrice,SellingPrice,MinStockLevel,Supplier,Location&#10;Cement,CEM-001,Cement & Concrete,50,bags,380,450,20,Dangote,Warehouse A"
+                rows="8"
+                placeholder="Name,Quantity,CostPrice,SellingPrice&#10;Cement (50kg bag),45,380,450&#10;Steel Rebar,150,720,850"
                 className="bulk-textarea"
               />
               <input type="file" accept=".csv,.txt" onChange={handleBulkFile} />
               <button onClick={handleBulkImport} className="submit-btn">
-                ✅ Import Items
+                Import Items
               </button>
             </div>
           </div>
