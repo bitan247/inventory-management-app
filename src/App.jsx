@@ -4,13 +4,9 @@ import "./App.css";
 function App() {
   const [currentPage, setCurrentPage] = useState("dashboard");
 
-  // Load items from localStorage
   const [items, setItems] = useState(() => {
     const savedItems = localStorage.getItem("inventory-items");
-    if (savedItems) {
-      return JSON.parse(savedItems);
-    }
-    // Default demo data
+    if (savedItems) return JSON.parse(savedItems);
     return [
       {
         id: 1,
@@ -25,48 +21,6 @@ function App() {
         quantity: 150,
         costPrice: 720,
         sellingPrice: 850,
-      },
-      {
-        id: 3,
-        name: "Sharp Sand",
-        quantity: 12,
-        costPrice: 2000,
-        sellingPrice: 2500,
-      },
-      {
-        id: 4,
-        name: "PVC Pipe (25mm)",
-        quantity: 200,
-        costPrice: 280,
-        sellingPrice: 350,
-      },
-      {
-        id: 5,
-        name: "Ceramic Floor Tiles",
-        quantity: 30,
-        costPrice: 2200,
-        sellingPrice: 2800,
-      },
-      {
-        id: 6,
-        name: "Copper Wire (2.5mm)",
-        quantity: 8,
-        costPrice: 950,
-        sellingPrice: 1200,
-      },
-      {
-        id: 7,
-        name: "Waterproof Membrane",
-        quantity: 42,
-        costPrice: 1200,
-        sellingPrice: 1500,
-      },
-      {
-        id: 8,
-        name: "Plywood (18mm)",
-        quantity: 65,
-        costPrice: 2600,
-        sellingPrice: 3200,
       },
     ];
   });
@@ -88,18 +42,16 @@ function App() {
 
   const [nextId, setNextId] = useState(() => {
     const savedId = localStorage.getItem("inventory-next-id");
-    return savedId ? JSON.parse(savedId) : 9;
+    return savedId ? JSON.parse(savedId) : 3;
   });
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("name");
+  const [sortBy, setSortBy] = useState("date");
 
-  // Bulk import state
   const [bulkText, setBulkText] = useState("");
   const importFileRef = useRef(null);
   const [importSuccess, setImportSuccess] = useState(false);
 
-  // Form state
   const [formData, setFormData] = useState({
     name: "",
     quantity: "",
@@ -109,23 +61,23 @@ function App() {
 
   const [editingItem, setEditingItem] = useState(null);
 
-  // Purchase form state
   const [purchaseForm, setPurchaseForm] = useState({
+    itemSearch: "",
     itemId: "",
+    isNewItem: false,
+    sellingPrice: "",
     quantity: "",
     costPrice: "",
     date: new Date().toISOString().split("T")[0],
   });
 
-  // Sales form state
   const [saleForm, setSaleForm] = useState({
-    items: [{ itemId: "", quantity: "", sellingPrice: "" }],
+    items: [{ itemSearch: "", itemId: "", quantity: "", sellingPrice: "" }],
     customerName: "",
     date: new Date().toISOString().split("T")[0],
     discount: 0,
   });
 
-  // Save to localStorage
   useEffect(() => {
     localStorage.setItem("inventory-items", JSON.stringify(items));
   }, [items]);
@@ -146,11 +98,9 @@ function App() {
     localStorage.setItem("inventory-next-id", JSON.stringify(nextId));
   }, [nextId]);
 
-  // Add/Update item
   const addItem = (e) => {
     e.preventDefault();
     if (!formData.name) return;
-
     const now = new Date().toISOString();
 
     if (editingItem) {
@@ -189,11 +139,78 @@ function App() {
     setCurrentPage("inventory");
   };
 
-  // Record purchase
   const recordPurchase = (e) => {
     e.preventDefault();
+    const now = new Date().toISOString();
+
+    if (purchaseForm.isNewItem) {
+      if (!purchaseForm.itemSearch.trim()) {
+        alert("Please enter an item name.");
+        return;
+      }
+      if (
+        !purchaseForm.quantity ||
+        !purchaseForm.costPrice ||
+        !purchaseForm.sellingPrice
+      ) {
+        alert("Please fill quantity, cost price, and selling price.");
+        return;
+      }
+
+      const newItem = {
+        id: nextId,
+        name: purchaseForm.itemSearch.trim(),
+        quantity: parseInt(purchaseForm.quantity) || 0,
+        costPrice: parseFloat(purchaseForm.costPrice) || 0,
+        sellingPrice: parseFloat(purchaseForm.sellingPrice) || 0,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const purchase = {
+        id: Date.now(),
+        itemId: newItem.id,
+        itemName: newItem.name,
+        quantity: newItem.quantity,
+        costPrice: newItem.costPrice,
+        totalCost: newItem.quantity * newItem.costPrice,
+        date: purchaseForm.date,
+        timestamp: now,
+      };
+
+      setItems([...items, newItem]);
+      setNextId(nextId + 1);
+      setPurchases([...purchases, purchase]);
+
+      setPurchaseForm({
+        itemSearch: "",
+        itemId: "",
+        isNewItem: false,
+        sellingPrice: "",
+        quantity: "",
+        costPrice: "",
+        date: new Date().toISOString().split("T")[0],
+      });
+
+      alert('New item "' + newItem.name + '" added and purchase recorded.');
+      return;
+    }
+
+    if (!purchaseForm.itemId) {
+      alert("Please select an item from the suggestions, or add a new one.");
+      return;
+    }
+
     const item = items.find((i) => i.id === parseInt(purchaseForm.itemId));
-    if (!item) return;
+    if (!item) {
+      alert("Item not found.");
+      return;
+    }
+
+    if (!purchaseForm.quantity) {
+      alert("Please enter a quantity.");
+      return;
+    }
 
     const purchase = {
       id: Date.now(),
@@ -204,7 +221,7 @@ function App() {
       totalCost:
         parseInt(purchaseForm.quantity) * parseFloat(purchaseForm.costPrice),
       date: purchaseForm.date,
-      timestamp: new Date().toISOString(),
+      timestamp: now,
     };
 
     setPurchases([...purchases, purchase]);
@@ -215,22 +232,25 @@ function App() {
               ...i,
               quantity: i.quantity + purchase.quantity,
               costPrice: purchase.costPrice,
+              updatedAt: now,
             }
           : i,
       ),
     );
 
     setPurchaseForm({
+      itemSearch: "",
       itemId: "",
+      isNewItem: false,
+      sellingPrice: "",
       quantity: "",
       costPrice: "",
       date: new Date().toISOString().split("T")[0],
     });
 
-    alert("Added " + purchase.quantity + " of " + item.name + " to stock");
+    alert("Added " + purchase.quantity + " of " + item.name + " to stock.");
   };
 
-  // Record sale
   const recordSale = (e) => {
     e.preventDefault();
     let totalSale = 0;
@@ -238,8 +258,39 @@ function App() {
     const saleItems = [];
 
     for (const saleItem of saleForm.items) {
+      if (!saleItem.itemSearch && !saleItem.quantity && !saleItem.itemId)
+        continue;
+
+      if (saleItem.itemSearch && !saleItem.itemId) {
+        const partialMatches = items.filter((i) =>
+          i.name.toLowerCase().includes(saleItem.itemSearch.toLowerCase()),
+        );
+        if (partialMatches.length === 0) {
+          alert(
+            '"' +
+              saleItem.itemSearch +
+              '" is not in the stock. Please add it first from the Stock page, or check the spelling.',
+          );
+        } else {
+          alert(
+            'Please select "' +
+              saleItem.itemSearch +
+              '" from the suggestions below the box.',
+          );
+        }
+        return;
+      }
+
       const item = items.find((i) => i.id === parseInt(saleItem.itemId));
-      if (!item || !saleItem.quantity) continue;
+      if (!item) {
+        alert("Item not found. Please select from the suggestions.");
+        return;
+      }
+
+      if (!saleItem.quantity) {
+        alert("Please enter a quantity for " + item.name);
+        return;
+      }
 
       if (parseInt(saleItem.quantity) > item.quantity) {
         alert(
@@ -288,11 +339,16 @@ function App() {
 
     setSales([...sales, sale]);
 
+    const now = new Date().toISOString();
     setItems(
       items.map((item) => {
         const soldItem = saleItems.find((si) => si.itemId === item.id);
         return soldItem
-          ? { ...item, quantity: item.quantity - soldItem.quantity }
+          ? {
+              ...item,
+              quantity: item.quantity - soldItem.quantity,
+              updatedAt: now,
+            }
           : item;
       }),
     );
@@ -327,7 +383,7 @@ function App() {
     }
 
     setSaleForm({
-      items: [{ itemId: "", quantity: "", sellingPrice: "" }],
+      items: [{ itemSearch: "", itemId: "", quantity: "", sellingPrice: "" }],
       customerName: "",
       date: new Date().toISOString().split("T")[0],
       discount: 0,
@@ -348,10 +404,15 @@ function App() {
   };
 
   const updateQuantity = (id, change) => {
+    const now = new Date().toISOString();
     setItems(
       items.map((item) =>
         item.id === id
-          ? { ...item, quantity: Math.max(0, item.quantity + change) }
+          ? {
+              ...item,
+              quantity: Math.max(0, item.quantity + change),
+              updatedAt: now,
+            }
           : item,
       ),
     );
@@ -376,7 +437,6 @@ function App() {
     }).format(amount);
   };
 
-  // Stats
   const totalItems = items.length;
   const totalStockValue = items.reduce(
     (total, item) => total + item.costPrice * item.quantity,
@@ -410,14 +470,16 @@ function App() {
     0,
   );
 
-  // Filtered items
-    const filteredItems = items
-    .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredItems = items
+    .filter((item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    )
     .sort((a, b) => {
-      if (sortBy === 'name') return a.name.localeCompare(b.name);
-      if (sortBy === 'quantity') return a.quantity - b.quantity;
-      if (sortBy === 'profit') return (a.sellingPrice - a.costPrice) - (b.sellingPrice - b.costPrice);
-      if (sortBy === 'date') {
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      if (sortBy === "quantity") return a.quantity - b.quantity;
+      if (sortBy === "profit")
+        return a.sellingPrice - a.costPrice - (b.sellingPrice - b.costPrice);
+      if (sortBy === "date") {
         const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
         const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
         return bTime - aTime;
@@ -425,7 +487,6 @@ function App() {
       return 0;
     });
 
-  // Export CSV
   const exportToCSV = () => {
     const headers = "Name,Quantity,CostPrice,SellingPrice";
     const rows = items.map(
@@ -449,7 +510,6 @@ function App() {
     window.URL.revokeObjectURL(url);
   };
 
-  // Export backup
   const exportBackup = () => {
     const data = { items, purchases, sales, customers, nextId };
     const json = JSON.stringify(data, null, 2);
@@ -462,7 +522,6 @@ function App() {
     window.URL.revokeObjectURL(url);
   };
 
-  // Import backup
   const importBackup = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -495,7 +554,6 @@ function App() {
     e.target.value = "";
   };
 
-  // Bulk import (4 columns only)
   const handleBulkImport = () => {
     const lines = bulkText.trim().split("\n");
     if (lines.length < 2) {
@@ -503,18 +561,20 @@ function App() {
       return;
     }
 
+    const now = new Date().toISOString();
     const newItems = [];
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(",");
       if (values.length < 4) continue;
-      const item = {
+      newItems.push({
         id: nextId + newItems.length,
         name: values[0].trim(),
         quantity: parseInt(values[1]) || 0,
         costPrice: parseFloat(values[2]) || 0,
         sellingPrice: parseFloat(values[3]) || 0,
-      };
-      newItems.push(item);
+        createdAt: now,
+        updatedAt: now,
+      });
     }
 
     if (newItems.length === 0) {
@@ -539,7 +599,6 @@ function App() {
     e.target.value = "";
   };
 
-  // Render page
   const renderPage = () => {
     switch (currentPage) {
       case "dashboard":
@@ -637,12 +696,13 @@ function App() {
             </div>
           </div>
         );
+
       case "inventory":
         return (
           <div className="inventory-page">
             <h1 className="page-title">📦 Inventory</h1>
 
-                        <div className="filters">
+            <div className="filters">
               <input
                 type="text"
                 placeholder="Search items..."
@@ -663,8 +723,13 @@ function App() {
               <button
                 onClick={() => {
                   setEditingItem(null);
-                  setFormData({ name: '', quantity: '', costPrice: '', sellingPrice: '' });
-                  setCurrentPage('add-item');
+                  setFormData({
+                    name: "",
+                    quantity: "",
+                    costPrice: "",
+                    sellingPrice: "",
+                  });
+                  setCurrentPage("add-item");
                 }}
                 className="add-item-btn"
               >
@@ -725,80 +790,194 @@ function App() {
             </div>
           </div>
         );
+
       case "record-purchase":
         return (
           <div className="form-page">
             <h1 className="page-title">📥 Record Purchase</h1>
             <form onSubmit={recordPurchase} className="simple-form">
               <div className="form-group">
-                <label>Select Item *</label>
-                <select
-                  value={purchaseForm.itemId}
+                <label>Item *</label>
+                <input
+                  type="text"
+                  value={purchaseForm.itemSearch}
                   onChange={(e) => {
-                    const item = items.find(
-                      (i) => i.id === parseInt(e.target.value),
-                    );
                     setPurchaseForm({
                       ...purchaseForm,
-                      itemId: e.target.value,
-                      costPrice: item ? item.costPrice : "",
+                      itemSearch: e.target.value,
+                      itemId: "",
+                      isNewItem: false,
+                      costPrice: "",
+                      sellingPrice: "",
                     });
                   }}
-                  required
-                >
-                  <option value="">Select item...</option>
-                  {items.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name} (Stock: {item.quantity})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Quantity *</label>
-                <input
-                  type="number"
-                  value={purchaseForm.quantity}
-                  onChange={(e) =>
-                    setPurchaseForm({
-                      ...purchaseForm,
-                      quantity: e.target.value,
-                    })
-                  }
-                  required
-                  min="1"
+                  placeholder="Type item name..."
                 />
+                {purchaseForm.itemId ? (
+                  <div className="matched-item">
+                    ✅{" "}
+                    {
+                      items.find((i) => i.id === parseInt(purchaseForm.itemId))
+                        ?.name
+                    }
+                    <button
+                      type="button"
+                      className="change-item-btn"
+                      onClick={() =>
+                        setPurchaseForm({
+                          ...purchaseForm,
+                          itemId: "",
+                          itemSearch: "",
+                          costPrice: "",
+                        })
+                      }
+                    >
+                      change
+                    </button>
+                  </div>
+                ) : purchaseForm.isNewItem ? (
+                  <div className="matched-item new-item">
+                    🆕 Adding new item: "{purchaseForm.itemSearch}"
+                    <button
+                      type="button"
+                      className="change-item-btn"
+                      onClick={() =>
+                        setPurchaseForm({
+                          ...purchaseForm,
+                          isNewItem: false,
+                          itemSearch: "",
+                          costPrice: "",
+                          sellingPrice: "",
+                        })
+                      }
+                    >
+                      cancel
+                    </button>
+                  </div>
+                ) : (
+                  purchaseForm.itemSearch.trim() && (
+                    <div className="suggestion-list">
+                      {items
+                        .filter((i) =>
+                          i.name
+                            .toLowerCase()
+                            .includes(purchaseForm.itemSearch.toLowerCase()),
+                        )
+                        .slice(0, 5)
+                        .map((match) => (
+                          <div
+                            key={match.id}
+                            className="suggestion-item"
+                            onClick={() =>
+                              setPurchaseForm({
+                                ...purchaseForm,
+                                itemId: match.id.toString(),
+                                itemSearch: match.name,
+                                costPrice: match.costPrice,
+                              })
+                            }
+                          >
+                            {match.name}
+                            <span className="suggestion-meta">
+                              {" "}
+                              (Stock: {match.quantity})
+                            </span>
+                          </div>
+                        ))}
+                      {items.filter((i) =>
+                        i.name
+                          .toLowerCase()
+                          .includes(purchaseForm.itemSearch.toLowerCase()),
+                      ).length === 0 && (
+                        <div
+                          className="suggestion-item new-item-suggestion"
+                          onClick={() =>
+                            setPurchaseForm({
+                              ...purchaseForm,
+                              isNewItem: true,
+                            })
+                          }
+                        >
+                          ➕ Add "{purchaseForm.itemSearch}" as a new item
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
               </div>
-              <div className="form-group">
-                <label>Cost Price per Unit *</label>
-                <input
-                  type="number"
-                  value={purchaseForm.costPrice}
-                  onChange={(e) =>
-                    setPurchaseForm({
-                      ...purchaseForm,
-                      costPrice: e.target.value,
-                    })
-                  }
-                  required
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-              <div className="form-group">
-                <label>Date</label>
-                <input
-                  type="date"
-                  value={purchaseForm.date}
-                  onChange={(e) =>
-                    setPurchaseForm({ ...purchaseForm, date: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <button type="submit" className="submit-btn">
-                Record Purchase
-              </button>
+
+              {(purchaseForm.itemId || purchaseForm.isNewItem) && (
+                <>
+                  <div className="form-group">
+                    <label>Quantity *</label>
+                    <input
+                      type="number"
+                      value={purchaseForm.quantity}
+                      onChange={(e) =>
+                        setPurchaseForm({
+                          ...purchaseForm,
+                          quantity: e.target.value,
+                        })
+                      }
+                      required
+                      min="1"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Cost Price per Unit *</label>
+                    <input
+                      type="number"
+                      value={purchaseForm.costPrice}
+                      onChange={(e) =>
+                        setPurchaseForm({
+                          ...purchaseForm,
+                          costPrice: e.target.value,
+                        })
+                      }
+                      required
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  {purchaseForm.isNewItem && (
+                    <div className="form-group">
+                      <label>Selling Price per Unit *</label>
+                      <input
+                        type="number"
+                        value={purchaseForm.sellingPrice}
+                        onChange={(e) =>
+                          setPurchaseForm({
+                            ...purchaseForm,
+                            sellingPrice: e.target.value,
+                          })
+                        }
+                        required
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                  )}
+                  <div className="form-group">
+                    <label>Date</label>
+                    <input
+                      type="date"
+                      value={purchaseForm.date}
+                      onChange={(e) =>
+                        setPurchaseForm({
+                          ...purchaseForm,
+                          date: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </div>
+                  <button type="submit" className="submit-btn">
+                    {purchaseForm.isNewItem
+                      ? "Add Item & Record Purchase"
+                      : "Record Purchase"}
+                  </button>
+                </>
+              )}
             </form>
           </div>
         );
@@ -826,85 +1005,146 @@ function App() {
                 </datalist>
               </div>
 
-              {saleForm.items.map((saleItem, index) => (
-                <div key={index} className="sale-item-row">
-                  <div className="form-group">
-                    <label>Item {index + 1} *</label>
-                    <select
-                      value={saleItem.itemId}
-                      onChange={(e) => {
-                        const item = items.find(
-                          (i) => i.id === parseInt(e.target.value),
-                        );
-                        const newItems = [...saleForm.items];
-                        newItems[index] = {
-                          ...newItems[index],
-                          itemId: e.target.value,
-                          sellingPrice: item ? item.sellingPrice : "",
-                        };
-                        setSaleForm({ ...saleForm, items: newItems });
-                      }}
-                      required
-                    >
-                      <option value="">Select item...</option>
-                      {items.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.name} (Stock: {item.quantity})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-row">
+              {saleForm.items.map((saleItem, index) => {
+                const matches = saleItem.itemSearch.trim()
+                  ? items
+                      .filter((i) =>
+                        i.name
+                          .toLowerCase()
+                          .includes(saleItem.itemSearch.toLowerCase()),
+                      )
+                      .slice(0, 5)
+                  : [];
+
+                return (
+                  <div key={index} className="sale-item-row">
                     <div className="form-group">
-                      <label>Quantity *</label>
+                      <label>Item {index + 1} *</label>
                       <input
-                        type="number"
-                        value={saleItem.quantity}
+                        type="text"
+                        value={saleItem.itemSearch}
                         onChange={(e) => {
                           const newItems = [...saleForm.items];
                           newItems[index] = {
                             ...newItems[index],
-                            quantity: e.target.value,
+                            itemSearch: e.target.value,
+                            itemId: "",
+                            sellingPrice: "",
                           };
                           setSaleForm({ ...saleForm, items: newItems });
                         }}
-                        required
-                        min="1"
+                        placeholder="Type item name..."
                       />
+                      {saleItem.itemId ? (
+                        <div className="matched-item">
+                          ✅{" "}
+                          {
+                            items.find(
+                              (i) => i.id === parseInt(saleItem.itemId),
+                            )?.name
+                          }
+                          <button
+                            type="button"
+                            className="change-item-btn"
+                            onClick={() => {
+                              const newItems = [...saleForm.items];
+                              newItems[index] = {
+                                ...newItems[index],
+                                itemId: "",
+                                itemSearch: "",
+                                sellingPrice: "",
+                              };
+                              setSaleForm({ ...saleForm, items: newItems });
+                            }}
+                          >
+                            change
+                          </button>
+                        </div>
+                      ) : (
+                        matches.length > 0 && (
+                          <div className="suggestion-list">
+                            {matches.map((match) => (
+                              <div
+                                key={match.id}
+                                className="suggestion-item"
+                                onClick={() => {
+                                  const newItems = [...saleForm.items];
+                                  newItems[index] = {
+                                    ...newItems[index],
+                                    itemId: match.id.toString(),
+                                    itemSearch: match.name,
+                                    sellingPrice: match.sellingPrice,
+                                  };
+                                  setSaleForm({ ...saleForm, items: newItems });
+                                }}
+                              >
+                                {match.name}
+                                <span className="suggestion-meta">
+                                  {" "}
+                                  (Stock: {match.quantity})
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      )}
                     </div>
-                    <div className="form-group">
-                      <label>Selling Price</label>
-                      <input
-                        type="number"
-                        value={saleItem.sellingPrice}
-                        onChange={(e) => {
-                          const newItems = [...saleForm.items];
-                          newItems[index] = {
-                            ...newItems[index],
-                            sellingPrice: e.target.value,
-                          };
+
+                    {saleItem.itemId && (
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Quantity *</label>
+                          <input
+                            type="number"
+                            value={saleItem.quantity}
+                            onChange={(e) => {
+                              const newItems = [...saleForm.items];
+                              newItems[index] = {
+                                ...newItems[index],
+                                quantity: e.target.value,
+                              };
+                              setSaleForm({ ...saleForm, items: newItems });
+                            }}
+                            required
+                            min="1"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Selling Price</label>
+                          <input
+                            type="number"
+                            value={saleItem.sellingPrice}
+                            onChange={(e) => {
+                              const newItems = [...saleForm.items];
+                              newItems[index] = {
+                                ...newItems[index],
+                                sellingPrice: e.target.value,
+                              };
+                              setSaleForm({ ...saleForm, items: newItems });
+                            }}
+                            step="0.01"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newItems = saleForm.items.filter(
+                            (_, i) => i !== index,
+                          );
                           setSaleForm({ ...saleForm, items: newItems });
                         }}
-                        step="0.01"
-                      />
-                    </div>
+                        className="remove-btn"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
-                  {index > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const newItems = saleForm.items.filter(
-                          (_, i) => i !== index,
-                        );
-                        setSaleForm({ ...saleForm, items: newItems });
-                      }}
-                      className="remove-btn"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
 
               <button
                 type="button"
@@ -913,7 +1153,12 @@ function App() {
                     ...saleForm,
                     items: [
                       ...saleForm.items,
-                      { itemId: "", quantity: "", sellingPrice: "" },
+                      {
+                        itemSearch: "",
+                        itemId: "",
+                        quantity: "",
+                        sellingPrice: "",
+                      },
                     ],
                   })
                 }
@@ -970,7 +1215,6 @@ function App() {
                 </p>
                 <p>Transactions: {todaySales.length}</p>
               </div>
-
               <div className="report-card">
                 <h3>This Month</h3>
                 <p>
@@ -981,7 +1225,6 @@ function App() {
                 </p>
                 <p>Transactions: {monthSales.length}</p>
               </div>
-
               <div className="report-card">
                 <h3>Inventory Value</h3>
                 <p>
@@ -1059,7 +1302,6 @@ function App() {
                   }
                   required
                   min="0"
-                  placeholder="0"
                 />
               </div>
               <div className="form-group">
@@ -1073,7 +1315,6 @@ function App() {
                   required
                   min="0"
                   step="0.01"
-                  placeholder="0.00"
                 />
               </div>
               <div className="form-group">
@@ -1087,7 +1328,6 @@ function App() {
                   required
                   min="0"
                   step="0.01"
-                  placeholder="0.00"
                 />
               </div>
               <button type="submit" className="submit-btn">

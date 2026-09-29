@@ -824,3 +824,83 @@ body {
   background: #388e3c;
   transform: scale(0.97);
 }
+.suggestion-list {
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.suggestion-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.95em;
+  color: #1a1a1a;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover,
+.suggestion-item:active {
+  background: #e3f2fd;
+}
+
+.suggestion-meta {
+  color: #666;
+  font-size: 0.85em;
+  margin-left: 6px;
+}
+
+.matched-item {
+  padding: 10px 12px;
+  background: #e8f5e9;
+  border-radius: 8px;
+  margin-top: 6px;
+  font-size: 0.95em;
+  color: #2e7d32;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+
+.change-item-btn {
+  background: transparent;
+  border: none;
+  color: #1976d2;
+  cursor: pointer;
+  font-size: 0.85em;
+  text-decoration: underline;
+  font-weight: 500;
+}
+.suggestion-item.new-item-suggestion {
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+.suggestion-item.new-item-suggestion:hover,
+.suggestion-item.new-item-suggestion:active {
+  background: #c8e6c9;
+}
+
+.matched-item.new-item {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.suggestion-item.empty {
+  color: #c62828;
+  font-style: italic;
+  cursor: default;
+  background: #ffebee;
+}
+
+.suggestion-item.empty:hover {
+  background: #ffebee;
+}
