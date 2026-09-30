@@ -1,49 +1,57 @@
 import { useState, useEffect, useRef } from "react";
+import { supabase } from "./supabase";
 import "./App.css";
+
+// Convert database row → app item
+const dbToItem = (row) => ({
+  id: row.id,
+  name: row.name,
+  quantity: row.quantity,
+  costPrice: parseFloat(row.cost_price) || 0,
+  sellingPrice: parseFloat(row.selling_price) || 0,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+const dbToPurchase = (row) => ({
+  id: row.id,
+  itemId: row.item_id,
+  itemName: row.item_name,
+  quantity: row.quantity,
+  costPrice: parseFloat(row.cost_price) || 0,
+  totalCost: parseFloat(row.total_cost) || 0,
+  date: row.date,
+  timestamp: row.created_at,
+});
+
+const dbToSale = (row) => ({
+  id: row.id,
+  items: row.items,
+  customerName: row.customer_name,
+  date: row.date,
+  discount: parseFloat(row.discount) || 0,
+  totalSale: parseFloat(row.total_sale) || 0,
+  totalCost: parseFloat(row.total_cost) || 0,
+  profit: parseFloat(row.profit) || 0,
+  timestamp: row.created_at,
+});
+
+const dbToCustomer = (row) => ({
+  id: row.id,
+  name: row.name,
+  totalPurchases: parseFloat(row.total_purchases) || 0,
+  lastPurchaseDate: row.last_purchase_date,
+});
 
 function App() {
   const [currentPage, setCurrentPage] = useState("dashboard");
+  const [loading, setLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState("idle"); // idle | syncing | error | offline
 
-  const [items, setItems] = useState(() => {
-    const savedItems = localStorage.getItem("inventory-items");
-    if (savedItems) return JSON.parse(savedItems);
-    return [
-      {
-        id: 1,
-        name: "Cement (50kg bag)",
-        quantity: 45,
-        costPrice: 380,
-        sellingPrice: 450,
-      },
-      {
-        id: 2,
-        name: "Steel Rebar (12mm)",
-        quantity: 150,
-        costPrice: 720,
-        sellingPrice: 850,
-      },
-    ];
-  });
-
-  const [purchases, setPurchases] = useState(() => {
-    const saved = localStorage.getItem("purchases");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [sales, setSales] = useState(() => {
-    const saved = localStorage.getItem("sales");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [customers, setCustomers] = useState(() => {
-    const saved = localStorage.getItem("customers");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [nextId, setNextId] = useState(() => {
-    const savedId = localStorage.getItem("inventory-next-id");
-    return savedId ? JSON.parse(savedId) : 3;
-  });
+  const [items, setItems] = useState([]);
+  const [purchases, setPurchases] = useState([]);
+  const [sales, setSales] = useState([]);
+  const [customers, setCustomers] = useState([]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date");
@@ -78,71 +86,130 @@ function App() {
     discount: 0,
   });
 
-  useEffect(() => {
-    localStorage.setItem("inventory-items", JSON.stringify(items));
-  }, [items]);
+  // LOAD DATA FROM SUPABASE
+  const loadAll = async () => {
+    setLoading(true);
+    setSyncStatus("syncing");
+    try {
+      const [itemsRes, purchasesRes, salesRes, customersRes] =
+        await Promise.all([
+          supabase
+            .from("items")
+            .select("*")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("purchases")
+            .select("*")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("sales")
+            .select("*")
+            .order("created_at", { ascending: false }),
+          supabase.from("customers").select("*"),
+        ]);
+
+      if (itemsRes.error) throw itemsRes.error;
+      if (purchasesRes.error) throw purchasesRes.error;
+      if (salesRes.error) throw salesRes.error;
+      if (customersRes.error) throw customersRes.error;
+
+      setItems(itemsRes.data.map(dbToItem));
+      setPurchases(purchasesRes.data.map(dbToPurchase));
+      setSales(salesRes.data.map(dbToSale));
+      setCustomers(customersRes.data.map(dbToCustomer));
+      setSyncStatus("idle");
+
+      // Cache to localStorage for offline reading
+      localStorage.setItem("cache-items", JSON.stringify(itemsRes.data));
+      localStorage.setItem(
+        "cache-purchases",
+        JSON.stringify(purchasesRes.data),
+      );
+      localStorage.setItem("cache-sales", JSON.stringify(salesRes.data));
+      localStorage.setItem(
+        "cache-customers",
+        JSON.stringify(customersRes.data),
+      );
+    } catch (err) {
+      console.error("Load failed:", err);
+      setSyncStatus("offline");
+      // Fall back to localStorage cache
+      const cItems = localStorage.getItem("cache-items");
+      const cPurch = localStorage.getItem("cache-purchases");
+      const cSales = localStorage.getItem("cache-sales");
+      const cCust = localStorage.getItem("cache-customers");
+      if (cItems) setItems(JSON.parse(cItems).map(dbToItem));
+      if (cPurch) setPurchases(JSON.parse(cPurch).map(dbToPurchase));
+      if (cSales) setSales(JSON.parse(cSales).map(dbToSale));
+      if (cCust) setCustomers(JSON.parse(cCust).map(dbToCustomer));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    localStorage.setItem("purchases", JSON.stringify(purchases));
-  }, [purchases]);
+    loadAll();
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem("sales", JSON.stringify(sales));
-  }, [sales]);
-
-  useEffect(() => {
-    localStorage.setItem("customers", JSON.stringify(customers));
-  }, [customers]);
-
-  useEffect(() => {
-    localStorage.setItem("inventory-next-id", JSON.stringify(nextId));
-  }, [nextId]);
-
-  const addItem = (e) => {
+  // ADD / UPDATE ITEM
+  const addItem = async (e) => {
     e.preventDefault();
     if (!formData.name) return;
     const now = new Date().toISOString();
 
     if (editingItem) {
+      const { data, error } = await supabase
+        .from("items")
+        .update({
+          name: formData.name,
+          quantity: parseInt(formData.quantity) || 0,
+          cost_price: parseFloat(formData.costPrice) || 0,
+          selling_price: parseFloat(formData.sellingPrice) || 0,
+          updated_at: now,
+        })
+        .eq("id", editingItem.id)
+        .select()
+        .single();
+
+      if (error) {
+        alert("Error updating: " + error.message);
+        return;
+      }
       setItems(
         items.map((item) =>
-          item.id === editingItem.id
-            ? {
-                ...item,
-                name: formData.name,
-                quantity: parseInt(formData.quantity) || 0,
-                costPrice: parseFloat(formData.costPrice) || 0,
-                sellingPrice: parseFloat(formData.sellingPrice) || 0,
-                updatedAt: now,
-              }
-            : item,
+          item.id === editingItem.id ? dbToItem(data) : item,
         ),
       );
       setEditingItem(null);
     } else {
-      setItems([
-        ...items,
-        {
-          id: nextId,
+      const { data, error } = await supabase
+        .from("items")
+        .insert({
           name: formData.name,
           quantity: parseInt(formData.quantity) || 0,
-          costPrice: parseFloat(formData.costPrice) || 0,
-          sellingPrice: parseFloat(formData.sellingPrice) || 0,
-          createdAt: now,
-          updatedAt: now,
-        },
-      ]);
-      setNextId(nextId + 1);
+          cost_price: parseFloat(formData.costPrice) || 0,
+          selling_price: parseFloat(formData.sellingPrice) || 0,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        alert("Error adding: " + error.message);
+        return;
+      }
+      setItems([dbToItem(data), ...items]);
     }
 
     setFormData({ name: "", quantity: "", costPrice: "", sellingPrice: "" });
     setCurrentPage("inventory");
   };
 
-  const recordPurchase = (e) => {
+  // RECORD PURCHASE
+  const recordPurchase = async (e) => {
     e.preventDefault();
     const now = new Date().toISOString();
 
+    // Case: New item
     if (purchaseForm.isNewItem) {
       if (!purchaseForm.itemSearch.trim()) {
         alert("Please enter an item name.");
@@ -157,31 +224,44 @@ function App() {
         return;
       }
 
-      const newItem = {
-        id: nextId,
-        name: purchaseForm.itemSearch.trim(),
-        quantity: parseInt(purchaseForm.quantity) || 0,
-        costPrice: parseFloat(purchaseForm.costPrice) || 0,
-        sellingPrice: parseFloat(purchaseForm.sellingPrice) || 0,
-        createdAt: now,
-        updatedAt: now,
-      };
+      // Create the item
+      const { data: newItemData, error: itemErr } = await supabase
+        .from("items")
+        .insert({
+          name: purchaseForm.itemSearch.trim(),
+          quantity: parseInt(purchaseForm.quantity) || 0,
+          cost_price: parseFloat(purchaseForm.costPrice) || 0,
+          selling_price: parseFloat(purchaseForm.sellingPrice) || 0,
+        })
+        .select()
+        .single();
 
-      const purchase = {
-        id: Date.now(),
-        itemId: newItem.id,
-        itemName: newItem.name,
-        quantity: newItem.quantity,
-        costPrice: newItem.costPrice,
-        totalCost: newItem.quantity * newItem.costPrice,
-        date: purchaseForm.date,
-        timestamp: now,
-      };
+      if (itemErr) {
+        alert("Error adding item: " + itemErr.message);
+        return;
+      }
 
-      setItems([...items, newItem]);
-      setNextId(nextId + 1);
-      setPurchases([...purchases, purchase]);
+      // Record the purchase
+      const { data: purchData, error: purchErr } = await supabase
+        .from("purchases")
+        .insert({
+          item_id: newItemData.id,
+          item_name: newItemData.name,
+          quantity: newItemData.quantity,
+          cost_price: parseFloat(newItemData.cost_price),
+          total_cost: newItemData.quantity * parseFloat(newItemData.cost_price),
+          date: purchaseForm.date,
+        })
+        .select()
+        .single();
 
+      if (purchErr) {
+        alert("Error recording purchase: " + purchErr.message);
+        return;
+      }
+
+      setItems([dbToItem(newItemData), ...items]);
+      setPurchases([dbToPurchase(purchData), ...purchases]);
       setPurchaseForm({
         itemSearch: "",
         itemId: "",
@@ -191,53 +271,64 @@ function App() {
         costPrice: "",
         date: new Date().toISOString().split("T")[0],
       });
-
-      alert('New item "' + newItem.name + '" added and purchase recorded.');
+      alert('New item "' + newItemData.name + '" added and purchase recorded.');
       return;
     }
 
+    // Case: Existing item
     if (!purchaseForm.itemId) {
       alert("Please select an item from the suggestions, or add a new one.");
       return;
     }
-
     const item = items.find((i) => i.id === parseInt(purchaseForm.itemId));
     if (!item) {
       alert("Item not found.");
       return;
     }
-
     if (!purchaseForm.quantity) {
       alert("Please enter a quantity.");
       return;
     }
 
-    const purchase = {
-      id: Date.now(),
-      itemId: item.id,
-      itemName: item.name,
-      quantity: parseInt(purchaseForm.quantity),
-      costPrice: parseFloat(purchaseForm.costPrice),
-      totalCost:
-        parseInt(purchaseForm.quantity) * parseFloat(purchaseForm.costPrice),
-      date: purchaseForm.date,
-      timestamp: now,
-    };
+    const qty = parseInt(purchaseForm.quantity);
+    const cost = parseFloat(purchaseForm.costPrice);
 
-    setPurchases([...purchases, purchase]);
-    setItems(
-      items.map((i) =>
-        i.id === item.id
-          ? {
-              ...i,
-              quantity: i.quantity + purchase.quantity,
-              costPrice: purchase.costPrice,
-              updatedAt: now,
-            }
-          : i,
-      ),
-    );
+    const { data: purchData, error: purchErr } = await supabase
+      .from("purchases")
+      .insert({
+        item_id: item.id,
+        item_name: item.name,
+        quantity: qty,
+        cost_price: cost,
+        total_cost: qty * cost,
+        date: purchaseForm.date,
+      })
+      .select()
+      .single();
 
+    if (purchErr) {
+      alert("Error: " + purchErr.message);
+      return;
+    }
+
+    const { data: updatedItem, error: itemErr } = await supabase
+      .from("items")
+      .update({
+        quantity: item.quantity + qty,
+        cost_price: cost,
+        updated_at: now,
+      })
+      .eq("id", item.id)
+      .select()
+      .single();
+
+    if (itemErr) {
+      alert("Error: " + itemErr.message);
+      return;
+    }
+
+    setPurchases([dbToPurchase(purchData), ...purchases]);
+    setItems(items.map((i) => (i.id === item.id ? dbToItem(updatedItem) : i)));
     setPurchaseForm({
       itemSearch: "",
       itemId: "",
@@ -247,11 +338,11 @@ function App() {
       costPrice: "",
       date: new Date().toISOString().split("T")[0],
     });
-
-    alert("Added " + purchase.quantity + " of " + item.name + " to stock.");
+    alert("Added " + qty + " of " + item.name + " to stock.");
   };
 
-  const recordSale = (e) => {
+  // RECORD SALE
+  const recordSale = async (e) => {
     e.preventDefault();
     let totalSale = 0;
     let totalCost = 0;
@@ -262,20 +353,14 @@ function App() {
         continue;
 
       if (saleItem.itemSearch && !saleItem.itemId) {
-        const partialMatches = items.filter((i) =>
+        const matches = items.filter((i) =>
           i.name.toLowerCase().includes(saleItem.itemSearch.toLowerCase()),
         );
-        if (partialMatches.length === 0) {
-          alert(
-            '"' +
-              saleItem.itemSearch +
-              '" is not in the stock. Please add it first from the Stock page, or check the spelling.',
-          );
+        if (matches.length === 0) {
+          alert('"' + saleItem.itemSearch + '" is not in the stock.');
         } else {
           alert(
-            'Please select "' +
-              saleItem.itemSearch +
-              '" from the suggestions below the box.',
+            'Please select "' + saleItem.itemSearch + '" from the suggestions.',
           );
         }
         return;
@@ -283,15 +368,13 @@ function App() {
 
       const item = items.find((i) => i.id === parseInt(saleItem.itemId));
       if (!item) {
-        alert("Item not found. Please select from the suggestions.");
+        alert("Item not found.");
         return;
       }
-
       if (!saleItem.quantity) {
         alert("Please enter a quantity for " + item.name);
         return;
       }
-
       if (parseInt(saleItem.quantity) > item.quantity) {
         alert(
           "Not enough stock for " + item.name + ". Available: " + item.quantity,
@@ -302,83 +385,100 @@ function App() {
       const quantity = parseInt(saleItem.quantity);
       const sellingPrice =
         parseFloat(saleItem.sellingPrice) || item.sellingPrice;
-      const costPrice = item.costPrice;
 
       saleItems.push({
         itemId: item.id,
         itemName: item.name,
         quantity,
         sellingPrice,
-        costPrice,
+        costPrice: item.costPrice,
         subtotal: quantity * sellingPrice,
       });
-
       totalSale += quantity * sellingPrice;
-      totalCost += quantity * costPrice;
+      totalCost += quantity * item.costPrice;
     }
 
     if (saleItems.length === 0) {
-      alert("Please add at least one item to the sale");
+      alert("Please add at least one item.");
       return;
     }
 
     const discountAmount = (totalSale * (saleForm.discount || 0)) / 100;
     const finalTotal = totalSale - discountAmount;
 
-    const sale = {
-      id: Date.now(),
-      items: saleItems,
-      customerName: saleForm.customerName || "Walk-in Customer",
-      date: saleForm.date,
-      discount: discountAmount,
-      totalSale: finalTotal,
-      totalCost,
-      profit: finalTotal - totalCost,
-      timestamp: new Date().toISOString(),
-    };
+    // Save the sale
+    const { data: saleData, error: saleErr } = await supabase
+      .from("sales")
+      .insert({
+        items: saleItems,
+        customer_name: saleForm.customerName || "Walk-in Customer",
+        date: saleForm.date,
+        discount: discountAmount,
+        total_sale: finalTotal,
+        total_cost: totalCost,
+        profit: finalTotal - totalCost,
+      })
+      .select()
+      .single();
 
-    setSales([...sales, sale]);
+    if (saleErr) {
+      alert("Error recording sale: " + saleErr.message);
+      return;
+    }
 
+    // Update each item's quantity
     const now = new Date().toISOString();
-    setItems(
-      items.map((item) => {
-        const soldItem = saleItems.find((si) => si.itemId === item.id);
-        return soldItem
-          ? {
-              ...item,
-              quantity: item.quantity - soldItem.quantity,
-              updatedAt: now,
-            }
-          : item;
-      }),
-    );
+    const updatedItems = [...items];
+    for (const sItem of saleItems) {
+      const item = updatedItems.find((i) => i.id === sItem.itemId);
+      if (!item) continue;
+      const { data: updated, error } = await supabase
+        .from("items")
+        .update({ quantity: item.quantity - sItem.quantity, updated_at: now })
+        .eq("id", item.id)
+        .select()
+        .single();
+      if (!error && updated) {
+        const idx = updatedItems.findIndex((i) => i.id === item.id);
+        updatedItems[idx] = dbToItem(updated);
+      }
+    }
+    setItems(updatedItems);
+    setSales([dbToSale(saleData), ...sales]);
 
+    // Save customer if named
     if (saleForm.customerName && saleForm.customerName !== "Walk-in Customer") {
       const existing = customers.find(
         (c) => c.name.toLowerCase() === saleForm.customerName.toLowerCase(),
       );
       if (!existing) {
-        setCustomers([
-          ...customers,
-          {
-            id: Date.now(),
+        const { data: newCust } = await supabase
+          .from("customers")
+          .insert({
             name: saleForm.customerName,
-            totalPurchases: finalTotal,
-            lastPurchaseDate: saleForm.date,
-          },
-        ]);
+            total_purchases: finalTotal,
+            last_purchase_date: saleForm.date,
+          })
+          .select()
+          .single();
+        if (newCust) setCustomers([...customers, dbToCustomer(newCust)]);
       } else {
-        setCustomers(
-          customers.map((c) =>
-            c.id === existing.id
-              ? {
-                  ...c,
-                  totalPurchases: c.totalPurchases + finalTotal,
-                  lastPurchaseDate: saleForm.date,
-                }
-              : c,
-          ),
-        );
+        const { data: updatedCust } = await supabase
+          .from("customers")
+          .update({
+            total_purchases: existing.totalPurchases + finalTotal,
+            last_purchase_date: saleForm.date,
+          })
+          .eq("id", existing.id)
+          .select()
+          .single();
+        if (updatedCust) {
+          setCustomers(
+            customers.map((c) =>
+              c.id === existing.id ? dbToCustomer(updatedCust) : c,
+            ),
+          );
+        }
       }
     }
 
@@ -388,7 +488,6 @@ function App() {
       date: new Date().toISOString().split("T")[0],
       discount: 0,
     });
-
     alert(
       "Sale recorded! Total: " +
         formatCurrency(finalTotal) +
@@ -397,25 +496,34 @@ function App() {
     );
   };
 
-  const deleteItem = (id) => {
-    if (window.confirm("Are you sure you want to delete this item?")) {
-      setItems(items.filter((item) => item.id !== id));
+  // DELETE ITEM
+  const deleteItem = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this item?")) return;
+    const { error } = await supabase.from("items").delete().eq("id", id);
+    if (error) {
+      alert("Error: " + error.message);
+      return;
     }
+    setItems(items.filter((item) => item.id !== id));
   };
 
-  const updateQuantity = (id, change) => {
+  // QUICK +/- STOCK
+  const updateQuantity = async (id, change) => {
+    const item = items.find((i) => i.id === id);
+    if (!item) return;
+    const newQty = Math.max(0, item.quantity + change);
     const now = new Date().toISOString();
-    setItems(
-      items.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              quantity: Math.max(0, item.quantity + change),
-              updatedAt: now,
-            }
-          : item,
-      ),
-    );
+    const { data, error } = await supabase
+      .from("items")
+      .update({ quantity: newQty, updated_at: now })
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) {
+      alert("Error: " + error.message);
+      return;
+    }
+    setItems(items.map((i) => (i.id === id ? dbToItem(data) : i)));
   };
 
   const startEditing = (item) => {
@@ -437,38 +545,27 @@ function App() {
     }).format(amount);
   };
 
+  // CALCULATED STATS
   const totalItems = items.length;
   const totalStockValue = items.reduce(
-    (total, item) => total + item.costPrice * item.quantity,
+    (t, i) => t + i.costPrice * i.quantity,
     0,
   );
   const totalPotentialRevenue = items.reduce(
-    (total, item) => total + item.sellingPrice * item.quantity,
+    (t, i) => t + i.sellingPrice * i.quantity,
     0,
   );
   const totalPotentialProfit = totalPotentialRevenue - totalStockValue;
 
   const today = new Date().toISOString().split("T")[0];
-  const todaySales = sales.filter((sale) => sale.date === today);
-  const todayRevenue = todaySales.reduce(
-    (total, sale) => total + sale.totalSale,
-    0,
-  );
-  const todayProfit = todaySales.reduce(
-    (total, sale) => total + sale.profit,
-    0,
-  );
+  const todaySales = sales.filter((s) => s.date === today);
+  const todayRevenue = todaySales.reduce((t, s) => t + s.totalSale, 0);
+  const todayProfit = todaySales.reduce((t, s) => t + s.profit, 0);
 
   const thisMonth = today.substring(0, 7);
-  const monthSales = sales.filter((sale) => sale.date.startsWith(thisMonth));
-  const monthRevenue = monthSales.reduce(
-    (total, sale) => total + sale.totalSale,
-    0,
-  );
-  const monthProfit = monthSales.reduce(
-    (total, sale) => total + sale.profit,
-    0,
-  );
+  const monthSales = sales.filter((s) => s.date.startsWith(thisMonth));
+  const monthRevenue = monthSales.reduce((t, s) => t + s.totalSale, 0);
+  const monthProfit = monthSales.reduce((t, s) => t + s.profit, 0);
 
   const filteredItems = items
     .filter((item) =>
@@ -487,18 +584,19 @@ function App() {
       return 0;
     });
 
+  // EXPORT CSV
   const exportToCSV = () => {
     const headers = "Name,Quantity,CostPrice,SellingPrice";
     const rows = items.map(
-      (item) =>
+      (i) =>
         '"' +
-        item.name +
+        i.name +
         '",' +
-        item.quantity +
+        i.quantity +
         "," +
-        item.costPrice +
+        i.costPrice +
         "," +
-        item.sellingPrice,
+        i.sellingPrice,
     );
     const csv = [headers, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -510,8 +608,9 @@ function App() {
     window.URL.revokeObjectURL(url);
   };
 
+  // EXPORT BACKUP
   const exportBackup = () => {
-    const data = { items, purchases, sales, customers, nextId };
+    const data = { items, purchases, sales, customers };
     const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], { type: "application/json" });
     const url = window.URL.createObjectURL(blob);
@@ -522,30 +621,48 @@ function App() {
     window.URL.revokeObjectURL(url);
   };
 
-  const importBackup = (e) => {
+  // IMPORT BACKUP (uploads everything to Supabase)
+  const importBackup = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const data = JSON.parse(event.target.result);
-        if (
-          data.items &&
-          data.purchases &&
-          data.sales &&
-          data.customers &&
-          data.nextId
-        ) {
-          setItems(data.items);
-          setPurchases(data.purchases);
-          setSales(data.sales);
-          setCustomers(data.customers);
-          setNextId(data.nextId);
-          setImportSuccess(true);
-          setTimeout(() => setImportSuccess(false), 3000);
-        } else {
+        if (!data.items) {
           alert("Invalid backup file.");
+          return;
         }
+
+        if (
+          !window.confirm(
+            "This will add " +
+              data.items.length +
+              " items to the cloud. Continue?",
+          )
+        )
+          return;
+
+        // Insert items
+        const itemRows = data.items.map((i) => ({
+          name: i.name,
+          quantity: i.quantity,
+          cost_price: i.costPrice,
+          selling_price: i.sellingPrice,
+        }));
+        const { data: newItems, error: itemErr } = await supabase
+          .from("items")
+          .insert(itemRows)
+          .select();
+        if (itemErr) {
+          alert("Error: " + itemErr.message);
+          return;
+        }
+
+        setItems([...newItems.map(dbToItem), ...items]);
+        setImportSuccess(true);
+        setTimeout(() => setImportSuccess(false), 3000);
+        alert("Imported " + newItems.length + " items successfully!");
       } catch (err) {
         alert("Error reading file.");
       }
@@ -554,52 +671,62 @@ function App() {
     e.target.value = "";
   };
 
-  const handleBulkImport = () => {
+  // BULK IMPORT (direct upload to Supabase)
+  const handleBulkImport = async () => {
     const lines = bulkText.trim().split("\n");
     if (lines.length < 2) {
-      alert("Please paste CSV data with at least one data row.");
+      alert("Please paste CSV data with at least one row.");
       return;
     }
 
-    const now = new Date().toISOString();
-    const newItems = [];
+    const rows = [];
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(",");
       if (values.length < 4) continue;
-      newItems.push({
-        id: nextId + newItems.length,
+      rows.push({
         name: values[0].trim(),
         quantity: parseInt(values[1]) || 0,
-        costPrice: parseFloat(values[2]) || 0,
-        sellingPrice: parseFloat(values[3]) || 0,
-        createdAt: now,
-        updatedAt: now,
+        cost_price: parseFloat(values[2]) || 0,
+        selling_price: parseFloat(values[3]) || 0,
       });
     }
 
-    if (newItems.length === 0) {
+    if (rows.length === 0) {
       alert("No valid rows found.");
       return;
     }
 
-    setItems((prev) => [...prev, ...newItems]);
-    setNextId(nextId + newItems.length);
+    const { data, error } = await supabase.from("items").insert(rows).select();
+    if (error) {
+      alert("Error: " + error.message);
+      return;
+    }
+
+    setItems([...data.map(dbToItem), ...items]);
     setBulkText("");
-    alert("Added " + newItems.length + " items successfully!");
+    alert("Added " + data.length + " items successfully!");
   };
 
   const handleBulkFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
-      setBulkText(event.target.result);
-    };
+    reader.onload = (event) => setBulkText(event.target.result);
     reader.readAsText(file);
     e.target.value = "";
   };
 
+  // RENDER PAGE
   const renderPage = () => {
+    if (loading) {
+      return (
+        <div className="loading-screen">
+          <h2>Loading inventory...</h2>
+          <p>Please wait</p>
+        </div>
+      );
+    }
+
     switch (currentPage) {
       case "dashboard":
         return (
@@ -683,6 +810,9 @@ function App() {
               >
                 📂 Import Backup
               </button>
+              <button onClick={loadAll} className="backup-btn">
+                🔄 Sync Now
+              </button>
               <input
                 type="file"
                 accept=".json"
@@ -694,6 +824,8 @@ function App() {
                 <p className="success-message">Backup restored!</p>
               )}
             </div>
+
+            <p className="sync-status">Status: {syncStatus}</p>
           </div>
         );
 
@@ -801,7 +933,7 @@ function App() {
                 <input
                   type="text"
                   value={purchaseForm.itemSearch}
-                  onChange={(e) => {
+                  onChange={(e) =>
                     setPurchaseForm({
                       ...purchaseForm,
                       itemSearch: e.target.value,
@@ -809,8 +941,8 @@ function App() {
                       isNewItem: false,
                       costPrice: "",
                       sellingPrice: "",
-                    });
-                  }}
+                    })
+                  }
                   placeholder="Type item name..."
                 />
                 {purchaseForm.itemId ? (
@@ -1015,7 +1147,6 @@ function App() {
                       )
                       .slice(0, 5)
                   : [];
-
                 return (
                   <div key={index} className="sale-item-row">
                     <div className="form-group">
@@ -1289,7 +1420,6 @@ function App() {
                     setFormData({ ...formData, name: e.target.value })
                   }
                   required
-                  placeholder="e.g. Cement (50kg bag)"
                 />
               </div>
               <div className="form-group">
@@ -1348,7 +1478,7 @@ function App() {
                 value={bulkText}
                 onChange={(e) => setBulkText(e.target.value)}
                 rows="8"
-                placeholder="Name,Quantity,CostPrice,SellingPrice&#10;Cement (50kg bag),45,380,450&#10;Steel Rebar,150,720,850"
+                placeholder="Name,Quantity,CostPrice,SellingPrice&#10;Cement (50kg bag),45,380,450"
                 className="bulk-textarea"
               />
               <input type="file" accept=".csv,.txt" onChange={handleBulkFile} />
